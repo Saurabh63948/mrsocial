@@ -1,0 +1,11 @@
+.posts{
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+.loading {
+  font-size: 1.5rem;
+  color: #555;
+  text-align: center;
+  margin-top: 20px;
+}
