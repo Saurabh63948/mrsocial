@@ -1,4 +1,4 @@
-import "./profile.scss"
+import "./profile.scss";
 import FacebookTwoToneIcon from "@mui/icons-material/FacebookTwoTone";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import InstagramIcon from "@mui/icons-material/Instagram";
@@ -22,32 +22,31 @@ const Profile = () => {
 
   const userId = parseInt(useLocation().pathname.split("/")[2]);
 
-  const { isLoading, error, data } = useQuery(["user"], () =>
-    makeRequest.get("/users/find/" + userId).then((res) => res.data)
-  );
+  // User Query
+  const { isLoading, error, data } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => makeRequest.get("/users/find/" + userId).then((res) => res.data),
+  });
 
-  const { isLoading: rIsLoading, data: relationshipData } = useQuery(
-    ["relationship"],
-    () =>
-      makeRequest
-        .get("/relationships?followedUserId=" + userId)
-        .then((res) => res.data)
-  );
+  // Relationship Query
+  const { isLoading: rIsLoading, data: relationshipData } = useQuery({
+    queryKey: ["relationship", userId],
+    queryFn: () => makeRequest.get("/relationships?followedUserId=" + userId).then((res) => res.data),
+  });
 
   const queryClient = useQueryClient();
 
-  const mutation = useMutation(
-    (following) => {
+  // Mutation for Follow/Unfollow
+  const mutation = useMutation({
+    mutationFn: (following) => {
       if (following)
         return makeRequest.delete("/relationships?userId=" + userId);
       return makeRequest.post("/relationships", { userId });
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["relationship"]);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["relationship", userId] });
+    },
+  });
 
   const handleFollow = () => {
     mutation.mutate(relationshipData.includes(currentUser.id));

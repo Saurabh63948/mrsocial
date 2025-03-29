@@ -1,0 +1,130 @@
+/// ---------------------------------------------
+///          **Theme and Responsive SCSS**
+/// ---------------------------------------------
+
+// 1. Initialize Global Theme Map
+$theme-map: () !default;
+
+// 2. Define Theme Variables
+$themes: (
+  light: (
+    textColor: #000,
+    bg: white,
+    logo: darkblue,
+    bgSoft: #f6f3f3,
+    textColorSoft: #555,
+    border: lightgray,
+  ),
+  dark: (
+    textColor: whitesmoke,
+    bg: #222,
+    logo: white,
+    bgSoft: #333,
+    textColorSoft: lightgray,
+    border: #444,
+  ),
+);
+
+// 3. Mixin to Apply Themes
+@mixin themify($themes) {
+  @each $theme, $map in $themes {
+    .theme-#{$theme} & {
+      // Merge each key-value pair to the global theme-map
+      @each $key, $value in $map {
+        $theme-map: map-merge(
+          $theme-map,
+          (
+            $key: $value,
+          )
+        ) !global;
+      }
+      @content; // Apply the content inside theme
+    }
+  }
+}
+
+// 4. Function to Retrieve Theme Values
+@function themed($key) {
+  @return map-get($theme-map, $key);
+}
+
+// 5. Responsive Mixins
+@mixin tablet {
+  @media (max-width: 960px) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @media (max-width: 480px) {
+    @content;
+  }
+}
+
+// ---------------------------------------------
+// 6. Global Styles
+// ---------------------------------------------
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  @include themify($themes) {
+    background-color: themed("bg");
+    color: themed("textColor");
+  }
+
+  @include tablet {
+    font-size: 14px;
+  }
+
+  @include mobile {
+    font-size: 12px;
+  }
+}
+
+// ---------------------------------------------
+// 7. Button Component
+// ---------------------------------------------
+
+.button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease-in-out;
+
+  @include themify($themes) {
+    background-color: themed("bgSoft");
+    border: 1px solid themed("border");
+    color: themed("textColorSoft");
+
+    &:hover {
+      background-color: themed("logo");
+      color: themed("bg");
+    }
+  }
+}
+
+// ---------------------------------------------
+// 8. Card Component
+// ---------------------------------------------
+
+.card {
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  @include themify($themes) {
+    background-color: themed("bgSoft");
+    color: themed("textColor");
+  }
+
+  @include tablet {
+    padding: 15px;
+  }
+
+  @include mobile {
+    padding: 10px;
+  }
+}

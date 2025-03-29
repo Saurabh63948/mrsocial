@@ -6,21 +6,21 @@ import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { Link } from "react-router-dom";
 import Comments from "../comments/Comments";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import moment from "moment";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { makeRequest } from "../Axios";
-import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
 
 const Post = ({ post }) => {
   const [commentOpen, setCommentOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [file, setFile] = useState(null); // <-- File state for upload
+  const [file, setFile] = useState(null);
 
   const { currentUser } = useContext(AuthContext);
+  const queryClient = useQueryClient();
 
-  // ✅ Method to Upload File
+  // ✅ Function to Upload File
   const upload = async () => {
     try {
       const formData = new FormData();
@@ -28,48 +28,45 @@ const Post = ({ post }) => {
       const res = await makeRequest.post("/upload", formData);
       return res.data;
     } catch (err) {
-      console.log("Upload Error: ", err);
+      console.error("Upload Error: ", err);
       return "";
     }
   };
 
-  const { isLoading, error, data } = useQuery(["likes", post.id], () =>
-    makeRequest.get("/likes?postId=" + post.id).then((res) => {
-      return res.data;
-    })
-  );
+  // ✅ Fetch Likes
+  const { isLoading, error, data } = useQuery({
+    queryKey: ["likes", post.id],
+    queryFn: () =>
+      makeRequest.get(`/likes?postId=${post.id}`).then((res) => res.data),
+  });
 
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation(
-    (liked) => {
-      if (liked) return makeRequest.delete("/likes?postId=" + post.id);
-      return makeRequest.post("/likes", { postId: post.id });
+  // ✅ Handle Like/Unlike
+  const likeMutation = useMutation({
+    mutationFn: (liked) =>
+      liked
+        ? makeRequest.delete(`/likes?postId=${post.id}`)
+        : makeRequest.post("/likes", { postId: post.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["likes", post.id] });
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["likes"]);
-      },
-    }
-  );
+  });
 
-  const deleteMutation = useMutation(
-    (postId) => {
-      return makeRequest.delete("/posts/" + postId);
+  // ✅ Handle Post Deletion
+  const deleteMutation = useMutation({
+    mutationFn: () => makeRequest.delete(`/posts/${post.id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["posts"]);
-      },
-    }
-  );
+  });
 
+  // ✅ Toggle Like
   const handleLike = () => {
-    mutation.mutate(data.includes(currentUser.id));
+    likeMutation.mutate(data?.includes(currentUser.id));
   };
 
+  // ✅ Handle Post Deletion
   const handleDelete = () => {
-    deleteMutation.mutate(post.id);
+    deleteMutation.mutate();
   };
 
   // ✅ Handle File Upload
@@ -77,6 +74,7 @@ const Post = ({ post }) => {
     setFile(e.target.files[0]);
     const imgUrl = await upload();
     console.log("Uploaded Image URL: ", imgUrl);
+    setFile(null); // Reset file after upload
   };
 
   return (
@@ -84,7 +82,7 @@ const Post = ({ post }) => {
       <div className="container">
         <div className="user">
           <div className="userInfo">
-            <img src={"/upload/" + currentUser.profilePic}alt="" />
+            <img src={"/upload/" + currentUser.profilePic} alt="Profile" />
             <div className="details">
               <Link
                 to={`/profile/${post.userId}`}
@@ -100,35 +98,34 @@ const Post = ({ post }) => {
             <button onClick={handleDelete}>Delete</button>
           )}
         </div>
+
         <div className="content">
           <p>{post.desc}</p>
-          <img src={"/upload/" + post.img} alt="" />
+          {post.img && <img src={"/upload/" + post.img} alt="Post" />}
         </div>
+
         <div className="info">
-          <div className="item">
+          <div className="item" onClick={handleLike}>
             {isLoading ? (
-              "loading"
-            ) : data.includes(currentUser.id) ? (
-              <FavoriteOutlinedIcon
-                style={{ color: "red" }}
-                onClick={handleLike}
-              />
+              "Loading..."
+            ) : data?.includes(currentUser.id) ? (
+              <FavoriteOutlinedIcon style={{ color: "red" }} />
             ) : (
-              <FavoriteBorderOutlinedIcon onClick={handleLike} />
+              <FavoriteBorderOutlinedIcon />
             )}
-            {data?.length} Likes
+            <span>{data?.length || 0} Likes</span>
           </div>
           <div className="item" onClick={() => setCommentOpen(!commentOpen)}>
             <TextsmsOutlinedIcon />
-            See Comments
+            <span>See Comments</span>
           </div>
           <div className="item">
             <ShareOutlinedIcon />
-            Share
+            <span>Share</span>
           </div>
         </div>
 
-        {/** ✅ File Upload Input */}
+        {/* ✅ File Upload Input */}
         <input
           type="file"
           id="file"

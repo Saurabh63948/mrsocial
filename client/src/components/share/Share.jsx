@@ -6,6 +6,7 @@ import { useContext, useState } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { makeRequest } from "../Axios";
+
 const Share = () => {
   const [file, setFile] = useState(null);
   const [desc, setDesc] = useState("");
@@ -25,17 +26,15 @@ const Share = () => {
 
   const queryClient = useQueryClient();
 
-  const mutation = useMutation(
-    (newPost) => {
+  // ✅ Corrected useMutation (V5 Syntax)
+  const mutation = useMutation({
+    mutationFn: (newPost) => {
       return makeRequest.post("/posts", newPost);
     },
-    {
-      onSuccess: () => {
-        // Invalidate and refetch
-        queryClient.invalidateQueries(["posts"]);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
 
   const handleClick = async (e) => {
     e.preventDefault();

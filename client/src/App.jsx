@@ -3,7 +3,6 @@ import Register from "./components/pages/register/Register";
 import {
   createBrowserRouter,
   RouterProvider,
- 
   Outlet,
   Navigate,
 } from "react-router-dom";
@@ -12,23 +11,31 @@ import LeftBar from "./components/leftBar/LeftBar";
 import RightBar from "./components/rightBar/RightBar";
 import Home from "./components/pages/home/Home";
 import Profile from "./components/pages/profile/Profile";
-import "./style.scss";
-import { useContext } from "react";
+import "./styles.scss";
+
+import { useContext, useEffect } from "react";
 import { DarkModeContext } from "./context/DarkModeContext";
 import { AuthContext } from "./context/AuthContext";
-import {
-  QueryClient,
-  QueryClientProvider,
-  
-} from '@tanstack/react-query'
-function App() {
-  const {currentUser} = useContext(AuthContext);
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+function App() {
+  const { currentUser } = useContext(AuthContext);
   const { darkMode } = useContext(DarkModeContext);
-  const queryClient = new QueryClient()
+  const queryClient = new QueryClient();
+
+  // Apply dark mode class to body on change
+  useEffect(() => {
+    const body = document.body;
+    body.classList.remove("theme-light", "theme-dark");
+    body.classList.add(`theme-${darkMode ? "dark" : "light"}`);
+  }, [darkMode]);
+  console.log(document.body.classList);
+
+  // Layout Component with Dark Mode Class
   const Layout = () => {
+    console.log(`Current Theme: theme-${darkMode ? "dark" : "light"}`);
+
     return (
-      <QueryClientProvider client={queryClient}>
       <div className={`theme-${darkMode ? "dark" : "light"}`}>
         <Navbar />
         <div style={{ display: "flex" }}>
@@ -39,18 +46,18 @@ function App() {
           <RightBar />
         </div>
       </div>
-      </QueryClientProvider>
     );
   };
 
+  // Protected Route for Auth
   const ProtectedRoute = ({ children }) => {
     if (!currentUser) {
       return <Navigate to="/login" />;
     }
-
     return children;
   };
 
+  // Defining Routes
   const router = createBrowserRouter([
     {
       path: "/",
@@ -80,10 +87,11 @@ function App() {
     },
   ]);
 
+  // QueryClientProvider for TanStack Query
   return (
-    <div>
-      <RouterProvider router={router} />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} fallbackElement={<div>Loading...</div>} />
+    </QueryClientProvider>
   );
 }
 
