@@ -15,7 +15,7 @@ const Update = ({ setOpenUpdate, user }) => {
     website: user.website,
   });
 
-  // ✅ File Upload Function
+  // File Upload Function
   const upload = async (file) => {
     if (!file) return "";
     try {
@@ -29,41 +29,53 @@ const Update = ({ setOpenUpdate, user }) => {
     }
   };
 
-  // ✅ Handle Text Change (Bug Fix)
+  // Handle Text Change
   const handleChange = (e) => {
     setTexts((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const queryClient = useQueryClient();
 
-  // ✅ Update Mutation
-  const mutation = useMutation(
-    (updatedUser) => makeRequest.put("/users", updatedUser),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(["user"]);
-        alert("Profile updated successfully! ✅");
-      },
-      onError: (err) => {
-        alert(`Failed to update profile: ${err.message}`);
-      },
-    }
-  );
+  // Update Mutation
+  const { mutate } = useMutation({
+    mutationFn: (updatedUser) => makeRequest.put("/users", updatedUser),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["user"]);
+      alert("Profile updated successfully! ✅");
+    },
+    onError: (err) => {
+      alert(`Failed to update profile: ${err.message}`);
+    },
+  });
 
-  // ✅ Handle Form Submit
+  // Handle Form Submit
   const handleClick = async (e) => {
     e.preventDefault();
 
     try {
-      const coverUrl = cover ? await upload(cover) : user.coverPic;
-      const profileUrl = profile ? await upload(profile) : user.profilePic;
+      const coverUrl = cover ? await upload(cover) : user.coverPic || "";
+      const profileUrl = profile ? await upload(profile) : user.profilePic || "";
 
-      mutation.mutate({
+      // URL Validation
+      let websiteUrl = texts.website;
+      if (websiteUrl && !/^https?:\/\//i.test(websiteUrl)) {
+        websiteUrl = "https://" + websiteUrl;
+      }
+
+      mutate({
         ...texts,
         coverPic: coverUrl,
         profilePic: profileUrl,
+        website: websiteUrl,
       });
 
+      setTexts({
+        email: "",
+        password: "",
+        name: "",
+        city: "",
+        website: "",
+      });
       setCover(null);
       setProfile(null);
       setOpenUpdate(false);
@@ -85,10 +97,12 @@ const Update = ({ setOpenUpdate, user }) => {
                   src={
                     cover
                       ? URL.createObjectURL(cover)
-                      : `/upload/${user.coverPic}`
+                      : user.coverPic
+                      ? `/upload/${user.coverPic}`
+                      : "https://via.placeholder.com/150"
                   }
                   alt="cover"
-                  onLoad={(e) => URL.revokeObjectURL(e.target.src)} // ✅ Memory Cleanup
+                  onLoad={(e) => URL.revokeObjectURL(e.target.src)}
                 />
                 <CloudUploadIcon className="icon" />
               </div>
@@ -108,10 +122,12 @@ const Update = ({ setOpenUpdate, user }) => {
                   src={
                     profile
                       ? URL.createObjectURL(profile)
-                      : `/upload/${user.profilePic}`
+                      : user.profilePic
+                      ? `/upload/${user.profilePic}`
+                      : "https://via.placeholder.com/150"
                   }
                   alt="profile"
-                  onLoad={(e) => URL.revokeObjectURL(e.target.src)} // ✅ Memory Cleanup
+                  onLoad={(e) => URL.revokeObjectURL(e.target.src)}
                 />
                 <CloudUploadIcon className="icon" />
               </div>
@@ -162,10 +178,11 @@ const Update = ({ setOpenUpdate, user }) => {
 
           <label>Website</label>
           <input
-            type="url"
+            type="text"
             name="website"
             value={texts.website}
             onChange={handleChange}
+            placeholder="https://example.com"
           />
 
           <button type="submit">Update</button>
