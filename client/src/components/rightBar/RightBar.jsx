@@ -1,4 +1,4 @@
-import "./rightBar.scss"; // ✅
+import "./RightBar.scss"
 
 
 const RightBar = () => {
