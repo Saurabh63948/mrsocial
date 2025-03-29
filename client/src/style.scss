@@ -1,3 +1,4 @@
+// Theme Variables
 $themes: (
   light: (
     textColor: #000,
@@ -17,12 +18,15 @@ $themes: (
   ),
 );
 
+// Global Theme Map
+$theme-map: () !global;
+
+// Mixin to Apply Themes
 @mixin themify($themes) {
   @each $theme, $map in $themes {
     .theme-#{$theme} & {
-      $theme-map: () !global;
-      @each $key, $submap in $map {
-        $value: map-get(map-get($themes, $theme), "#{$key}");
+      // Merge each key-value pair to the global theme-map
+      @each $key, $value in $map {
         $theme-map: map-merge(
           $theme-map,
           (
@@ -30,28 +34,59 @@ $themes: (
           )
         ) !global;
       }
-      @content;
-      $theme-map: null !global;
+      @content; // Apply the content inside theme
     }
   }
 }
 
+// Function to Retrieve Theme Values
 @function themed($key) {
   @return map-get($theme-map, $key);
 }
 
-@mixin mobile {
-  @media (max-width: 480px) {
-    @content;
-  }
-}
+// Mixin for Tablet Responsiveness
 @mixin tablet {
   @media (max-width: 960px) {
     @content;
   }
 }
-@mixin mobile{
-  @media(max-width:480px){
-   @content;
-  }  
+
+// Mixin for Mobile Responsiveness
+@mixin mobile {
+  @media (max-width: 480px) {
+    @content;
+  }
+}
+
+// Usage Example
+body {
+  @include themify($themes) {
+    background-color: themed("bg");
+    color: themed("textColor");
+  }
+
+  @include tablet {
+    font-size: 14px;
+  }
+
+  @include mobile {
+    font-size: 12px;
+  }
+}
+
+// Example Component
+.button {
+  @include themify($themes) {
+    background-color: themed("bgSoft");
+    border: 1px solid themed("border");
+    color: themed("textColorSoft");
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: themed("logo");
+      color: themed("bg");
+    }
+  }
 }
